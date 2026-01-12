@@ -11,9 +11,9 @@
         <string>$HOME/bin/start-repoprompt-bridge.sh</string>
     </array>
     <key>RunAtLoad</key>
-    <true/>
+    <false/>
     <key>KeepAlive</key>
-    <true/>
+    <false/>
     <key>StandardOutPath</key>
     <string>/tmp/repoprompt-bridge.log</string>
     <key>StandardErrorPath</key>

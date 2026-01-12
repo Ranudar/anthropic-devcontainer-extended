@@ -65,11 +65,30 @@ Extends `ghcr.io/anthropics/devcontainer-templates` with browser automation and 
 uv tool install mcp-proxy  # or: pipx install mcp-proxy
 
 # Copy script
+mkdir -p ~/bin
 cp mac-host/start-repoprompt-bridge.sh ~/bin/
 chmod +x ~/bin/start-repoprompt-bridge.sh
 
 # Run (keep open)
 ~/bin/start-repoprompt-bridge.sh
+```
+
+Optional: manage the bridge with a LaunchAgent (manual start/stop, no auto-run on login):
+
+```bash
+# Install agent (does not start yet)
+cp mac-host/com.repoprompt.mcp-bridge.plist ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.repoprompt.mcp-bridge.plist
+
+# Start when needed (e.g., before opening the devcontainer)
+launchctl kickstart -k gui/$(id -u)/com.repoprompt.mcp-bridge
+
+# Stop when done (stays stopped)
+launchctl stop gui/$(id -u)/com.repoprompt.mcp-bridge
+
+# Uninstall
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.repoprompt.mcp-bridge.plist
+rm ~/Library/LaunchAgents/com.repoprompt.mcp-bridge.plist
 ```
 
 ### 3. Open in VS Code
