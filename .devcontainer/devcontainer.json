@@ -1,0 +1,47 @@
+{
+  "name": "Claude Code + Repo Prompt MCP + Dev Browser + Flow-Next",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "runArgs": [
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW",
+    "--shm-size=2gb"
+  ],
+  "mounts": [
+    "source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind",
+    "source=claude-code-commandhistory,target=/commandhistory,type=volume"
+  ],
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    "HISTFILE": "/commandhistory/.zsh_history",
+    "REPOPROMPT_MCP_URL": "http://host.docker.internal:8096/sse",
+    "PLAYWRIGHT_BROWSERS_PATH": "/home/node/.cache/ms-playwright",
+    "DISPLAY": ":99"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens",
+        "ms-playwright.playwright"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "bash": { "path": "bash", "icon": "terminal-bash" },
+          "zsh": { "path": "zsh" }
+        }
+      }
+    }
+  },
+  "postCreateCommand": "sudo /usr/local/bin/init-firewall.sh && /usr/local/bin/setup-plugins.sh",
+  "remoteUser": "node"
+}
