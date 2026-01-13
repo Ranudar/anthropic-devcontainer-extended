@@ -52,6 +52,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ripgrep \
     fd-find \
     gh \
+    unzip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # git-delta (better diffs)
