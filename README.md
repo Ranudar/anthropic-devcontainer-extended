@@ -106,6 +106,124 @@ claude --dangerously-skip-permissions
 
 ---
 
+## Testing the Devcontainer
+
+After opening the container, run these tests to verify all components work:
+
+### 1. Test Base Tools
+
+```bash
+# Check versions
+node --version          # Should show v20.x
+python3.14 --version    # Should show Python 3.14.x
+uv --version            # Should show uv 0.x
+ruff --version          # Should show ruff 0.x
+bun --version           # Should show bun 1.x
+playwright --version    # Should show Version 1.57.x
+
+# Check shell
+echo $SHELL             # Should show /bin/zsh
+```
+
+### 2. Test Repo Prompt MCP (requires bridge on Mac)
+
+```bash
+# First, ensure the bridge is running on Mac:
+# ~/bin/start-repoprompt-bridge.sh
+
+# Test connection from container
+curl -s http://host.docker.internal:8096/sse | head -1
+# Should show: event: endpoint
+
+# In Claude Code, verify MCP is connected
+/mcp
+# Should list RepoPrompt as connected
+```
+
+### 3. Test flow-next Plugin
+
+```bash
+# In Claude Code terminal
+claude --dangerously-skip-permissions
+
+# Run setup (first time only)
+/flow-next:setup
+
+# Test planning (creates .flow/ directory)
+/flow-next:plan Create a hello world script
+
+# Verify .flow/ was created
+ls -la .flow/
+```
+
+### 4. Test dev-browser Skill
+
+```bash
+# Start a simple test server
+echo '<html><body><h1>Test Page</h1><button id="btn">Click me</button></body></html>' > /tmp/test.html
+cd /tmp && python3.14 -m http.server 8080 &
+
+# In Claude Code, ask to test it:
+"Use dev-browser to check if localhost:8080 has a button with id 'btn'"
+
+# Clean up
+pkill -f "python3.14 -m http.server"
+```
+
+### 5. Test Playwright (E2E)
+
+```bash
+# Create a simple test
+mkdir -p /tmp/playwright-test && cd /tmp/playwright-test
+
+cat > test_example.py << 'EOF'
+from playwright.sync_api import sync_playwright
+
+def test_playwright_works():
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.goto("https://example.com")
+        assert "Example Domain" in page.title()
+        browser.close()
+        print("Playwright test passed!")
+
+if __name__ == "__main__":
+    test_playwright_works()
+EOF
+
+# Run with Python directly
+python3.14 test_example.py
+
+# Or with pytest (if in a project with pytest-playwright)
+# pytest test_example.py -v
+```
+
+### 6. Test Firewall
+
+```bash
+# Should work (allowed domains)
+curl -s https://api.anthropic.com -o /dev/null && echo "Anthropic API: OK"
+curl -s https://registry.npmjs.org -o /dev/null && echo "npm registry: OK"
+
+# Should fail (blocked)
+curl -s --max-time 3 https://example.com || echo "example.com: Blocked (expected)"
+```
+
+### Quick Verification Checklist
+
+| Component | Test Command | Expected Result |
+|-----------|--------------|-----------------|
+| Node.js | `node --version` | v20.x |
+| Python | `python3.14 --version` | 3.14.x |
+| uv | `uv --version` | 0.x |
+| Bun | `bun --version` | 1.x |
+| Playwright | `playwright --version` | 1.57.x |
+| MCP Bridge | `curl http://host.docker.internal:8096/sse` | `event: endpoint` |
+| Firewall | `curl https://api.anthropic.com` | Success |
+
+---
+
 ## Usage
 
 ### flow-next
