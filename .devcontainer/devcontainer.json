@@ -1,12 +1,17 @@
 {
   "name": "Claude Code + Repo Prompt MCP + Dev Browser + Flow-Next",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "args": {
+      "GIT_DELTA_VERSION": "0.18.2",
+      "ZSH_IN_DOCKER_VERSION": "1.2.0"
+    }
   },
   "runArgs": [
     "--cap-add=NET_ADMIN",
     "--cap-add=NET_RAW",
-    "--shm-size=2gb"
+    "--shm-size=2gb",
+    "--ipc=host"
   ],
   "mounts": [
     "source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind",
@@ -16,8 +21,8 @@
     "CLAUDE_CONFIG_DIR": "/home/node/.claude",
     "HISTFILE": "/commandhistory/.zsh_history",
     "REPOPROMPT_MCP_URL": "http://host.docker.internal:8096/sse",
-    "PLAYWRIGHT_BROWSERS_PATH": "/home/node/.cache/ms-playwright",
-    "DISPLAY": ":99"
+    "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright",
+    "UV_PYTHON_PREFERENCE": "managed"
   },
   "customizations": {
     "vscode": {
@@ -26,7 +31,9 @@
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "eamodio.gitlens",
-        "ms-playwright.playwright"
+        "ms-playwright.playwright",
+        "charliermarsh.ruff",
+        "ms-python.python"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -38,6 +45,10 @@
         "terminal.integrated.profiles.linux": {
           "bash": { "path": "bash", "icon": "terminal-bash" },
           "zsh": { "path": "zsh" }
+        },
+        "python.defaultInterpreterPath": "/home/node/.local/share/uv/python/cpython-3.14.0-linux-x86_64-gnu/bin/python3.14",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
         }
       }
     }

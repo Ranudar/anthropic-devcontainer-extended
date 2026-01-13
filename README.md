@@ -1,47 +1,47 @@
 # Claude Code Extended Devcontainer
 
-Extends `ghcr.io/anthropics/devcontainer-templates` with browser automation and workflow tooling.
+A layered devcontainer for Claude Code with browser automation, workflow tooling, and Python/Node development.
 
-## What's Added
+## Features
 
 | Component | Purpose |
 |-----------|---------|
+| **Claude Code CLI** | Anthropic's AI coding assistant |
 | **Repo Prompt MCP** | Context building via Mac host bridge |
 | **dev-browser** | Browser automation skill (SawyerHood) |
 | **flow-next** | Planning/execution workflow (Gordon Mickel) |
-| **Playwright + Chromium** | Browser engine + MCP |
-| **Bun** | Runtime for dev-browser |
+| **Playwright** | E2E testing (pytest-playwright) |
+| **Python 3.14 + uv** | Python development |
+| **Node 20 + Bun** | JavaScript/TypeScript development |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ MAC HOST                                                        │
-│                                                                 │
-│   mcp-proxy :8096 ◄── ~/RepoPrompt/repoprompt_cli              │
-│        │                                                        │
-└────────│────────────────────────────────────────────────────────┘
-         │
-         ▼
-┌────────────────────────────────────────────────────────────────┐
-│ DEVCONTAINER                                                    │
-│                                                                 │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │ ghcr.io/anthropics/devcontainer-templates:latest           │ │
-│  │ Claude Code · mcp-proxy · zsh · git-delta · fzf · gh       │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                          ▲ extends                              │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │ Extension Layer                                            │ │
-│  │ Bun · Playwright · Chromium · Xvfb                         │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                 │
-│  MCP: RepoPrompt (host:8096) · Playwright                       │
-│  Skills: dev-browser · flow-next                                │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│ LAYER 1: mcr.microsoft.com/playwright:v1.57.0-noble                     │
+│ Ubuntu 24.04 · Node 20 · Chromium · Firefox · WebKit                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│ LAYER 2: Anthropic Claude Code essentials                               │
+│ Claude Code CLI · iptables/ipset · firewall script                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│ LAYER 3: Common dev tools                                               │
+│ zsh · fzf · git-delta · gh · jq · ripgrep · fd                          │
+│ Python 3.14 (via uv) · ruff · Bun                                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│ LAYER 4: postCreateCommand (always fresh)                               │
+│ flow-next · dev-browser · Repo Prompt MCP config                        │
+└─────────────────────────────────────────────────────────────────────────┘
+
+        ▲
+        │ MCP bridge (port 8096)
+        ▼
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ MAC HOST                                                                │
+│ mcp-proxy :8096 ◄── ~/RepoPrompt/repoprompt_cli                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -126,18 +126,21 @@ Just ask naturally:
 "Verify form validation"
 ```
 
-### Playwright MCP
-
-```
-"Use playwright to screenshot the dashboard"
-"Fill out the contact form at localhost:3000/contact"
-```
-
 ### Repo Prompt
 
 ```bash
 /RepoPrompt:rp-build Add user authentication
 /RepoPrompt:rp-investigate Why is checkout failing?
+```
+
+### E2E Tests (pytest-playwright)
+
+```bash
+# Run E2E tests
+pytest tests/e2e/
+
+# Run with headed browser
+pytest tests/e2e/ --headed
 ```
 
 ---
@@ -146,10 +149,38 @@ Just ask naturally:
 
 | File | Description |
 |------|-------------|
-| `Dockerfile` | 67 lines. Extends Anthropic base, adds Bun + Playwright |
-| `devcontainer.json` | Mounts, env vars, VS Code extensions |
+| `Dockerfile` | 4-layer build: Playwright → Claude Code → Dev tools |
+| `devcontainer.json` | Mounts, env vars, VS Code extensions, postCreateCommand |
 | `init-firewall.sh` | Whitelists domains, opens MCP port 8096 |
 | `setup-plugins.sh` | Installs dev-browser, flow-next, configures MCP |
+
+---
+
+## Layer Details
+
+### Layer 1: Playwright Base
+- `mcr.microsoft.com/playwright:v1.57.0-noble`
+- Pre-built browsers (Chromium, Firefox, WebKit)
+- Node 20, npm
+- Ubuntu 24.04 LTS
+
+### Layer 2: Claude Code Essentials
+- `@anthropic-ai/claude-code` CLI
+- Firewall tools (iptables, ipset, iproute2, dnsutils)
+- Sudoers config for firewall script
+
+### Layer 3: Dev Tools
+- **Shell:** zsh, powerlevel10k, fzf
+- **Git:** git-delta, gh
+- **CLI:** jq, ripgrep, fd
+- **Python:** uv, Python 3.14, ruff
+- **JS:** Bun (for dev-browser)
+
+### Layer 4: Dynamic Plugins (postCreateCommand)
+Installed fresh on every container start:
+- flow-next (Gordon Mickel's marketplace)
+- dev-browser (SawyerHood)
+- Repo Prompt MCP configuration
 
 ---
 
@@ -171,22 +202,28 @@ curl http://host.docker.internal:8096/sse
 /flow-next:setup
 ```
 
-**Playwright missing browsers:**
-```bash
-npx playwright install chromium --with-deps
-```
-
 **dev-browser not working:**
 ```bash
 cd ~/.claude/skills/dev-browser
 bun install && bun run start-server
 ```
 
+**Python version:**
+```bash
+# Check Python version
+uv python list
+
+# Use Python 3.14 in project
+uv venv --python 3.14
+uv sync
+```
+
 ---
 
 ## Credits
 
-- [Anthropic](https://github.com/anthropics/devcontainer-templates) - Base image
-- [SawyerHood](https://github.com/SawyerHood/dev-browser) - dev-browser
-- [Gordon Mickel](https://github.com/gmickel/gmickel-claude-marketplace) - flow-next
-- [Microsoft](https://github.com/microsoft/playwright-mcp) - Playwright MCP
+- [Microsoft Playwright](https://playwright.dev/) - Base image & browser automation
+- [Anthropic](https://github.com/anthropics/claude-code) - Claude Code CLI
+- [SawyerHood](https://github.com/SawyerHood/dev-browser) - dev-browser skill
+- [Gordon Mickel](https://github.com/gmickel/gmickel-claude-marketplace) - flow-next plugin
+- [Astral](https://github.com/astral-sh/uv) - uv package manager
