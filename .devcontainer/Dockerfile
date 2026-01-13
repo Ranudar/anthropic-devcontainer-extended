@@ -13,7 +13,7 @@ FROM mcr.microsoft.com/playwright:v1.57.0-noble
 # LAYER 2: Anthropic Claude Code essentials
 # =============================================================================
 
-# Firewall tools + basic utilities
+# Firewall tools + basic utilities + locale
 RUN apt-get update && apt-get install -y --no-install-recommends \
     iptables \
     ipset \
@@ -23,7 +23,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     curl \
     wget \
+    locales \
+    && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
+    && sed -i '/en_DK.UTF-8/s/^# //g' /etc/locale.gen \
+    && locale-gen \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Locale: English messages + ISO dates (YYYY-MM-DD) + 24h time
+ENV LANG=en_US.UTF-8
+ENV LC_TIME=en_DK.UTF-8
 
 # Create node user (Playwright image uses pwuser, we want node for Anthropic compatibility)
 ARG USERNAME=node
