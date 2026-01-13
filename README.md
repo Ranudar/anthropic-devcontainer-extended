@@ -131,14 +131,30 @@ echo $SHELL             # Should show /bin/zsh
 # First, ensure the bridge is running on Mac:
 # ~/bin/start-repoprompt-bridge.sh
 
-# Test connection from container
+# Test SSE endpoint (legacy transport)
 curl -s http://host.docker.internal:8096/sse | head -1
 # Should show: event: endpoint
+
+# Test Streamable HTTP endpoint (preferred)
+curl -s -X POST http://host.docker.internal:8096/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
+# Should return JSON with serverInfo.name: "Repo Prompt"
 
 # In Claude Code, verify MCP is connected
 /mcp
 # Should list RepoPrompt as connected
 ```
+
+**MCP Transport Endpoints:**
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/mcp` | POST | Streamable HTTP transport (preferred) |
+| `/sse` | GET | SSE event stream (returns session endpoint) |
+| `/messages/?session_id=...` | POST | Send messages via SSE transport |
+
+> **Note:** `POST /sse` returns 405 Method Not Allowed - this is expected. Use `/mcp` for Streamable HTTP or follow the SSE protocol (GET `/sse` → POST to returned endpoint).
 
 ### 3. Test flow-next Plugin
 
@@ -219,7 +235,8 @@ curl -s --max-time 3 https://example.com || echo "example.com: Blocked (expected
 | uv | `uv --version` | 0.x |
 | Bun | `bun --version` | 1.x |
 | Playwright | `playwright --version` | 1.57.x |
-| MCP Bridge | `curl http://host.docker.internal:8096/sse` | `event: endpoint` |
+| MCP Bridge (SSE) | `curl http://host.docker.internal:8096/sse` | `event: endpoint` |
+| MCP Bridge (HTTP) | `curl -X POST http://host.docker.internal:8096/mcp -H "Content-Type: application/json" -H "Accept: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'` | `"name":"Repo Prompt"` |
 | Firewall | `curl https://api.anthropic.com` | Success |
 
 ---
@@ -306,12 +323,21 @@ Installed fresh on every container start:
 
 **Repo Prompt not connecting:**
 ```bash
-# Container
+# Test SSE endpoint
 curl http://host.docker.internal:8096/sse
+
+# Test Streamable HTTP endpoint (preferred)
+curl -X POST http://host.docker.internal:8096/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
 
 # Mac - ensure bridge running
 ~/bin/start-repoprompt-bridge.sh
 ```
+
+**POST /sse returns 405 Method Not Allowed:**
+This is expected. The `/sse` endpoint only accepts GET requests. Use `/mcp` for Streamable HTTP transport instead.
 
 **flow-next not found:**
 ```bash
