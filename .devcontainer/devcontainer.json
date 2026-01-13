@@ -46,7 +46,7 @@
           "bash": { "path": "bash", "icon": "terminal-bash" },
           "zsh": { "path": "zsh" }
         },
-        "python.defaultInterpreterPath": "/home/node/.local/share/uv/python/cpython-3.14.0-linux-x86_64-gnu/bin/python3.14",
+        "python.defaultInterpreterPath": "python3.14",
         "[python]": {
           "editor.defaultFormatter": "charliermarsh.ruff"
         }

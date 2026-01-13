@@ -170,9 +170,9 @@ pytest tests/e2e/ --headed
 - Sudoers config for firewall script
 
 ### Layer 3: Dev Tools
-- **Shell:** zsh, powerlevel10k, fzf
+- **Shell:** zsh, oh-my-zsh, powerlevel10k, fzf
 - **Git:** git-delta, gh
-- **CLI:** jq, ripgrep, fd
+- **CLI:** jq, ripgrep, fd, unzip
 - **Python:** uv, Python 3.14, ruff
 - **JS:** Bun (for dev-browser)
 
