@@ -53,11 +53,14 @@ done
 ipset add allowed_ips 127.0.0.0/8 -exist
 
 # Allow Docker host (for Repo Prompt MCP bridge)
-HOST_IP=$(getent hosts host.docker.internal | awk '{ print $1 }' || echo "172.17.0.1")
-if [ -n "$HOST_IP" ]; then
-    ipset add allowed_ips "$HOST_IP" -exist
-    echo "✅ Added Docker host ($HOST_IP) to allowed IPs for MCP bridge"
+# Filter for IPv4 only (ipset hash:net defaults to IPv4)
+HOST_IP=$(getent ahostsv4 host.docker.internal 2>/dev/null | awk '{ print $1 }' | head -1 || echo "")
+if [ -z "$HOST_IP" ]; then
+    # Fallback to default Docker bridge
+    HOST_IP="172.17.0.1"
 fi
+ipset add allowed_ips "$HOST_IP" -exist
+echo "✅ Added Docker host ($HOST_IP) to allowed IPs for MCP bridge"
 
 # Allow Docker network ranges
 ipset add allowed_ips 172.16.0.0/12 -exist
